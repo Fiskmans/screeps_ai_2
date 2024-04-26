@@ -1,7 +1,10 @@
+console.log("Recompiling");
+let start = Game.cpu.getUsed();
+
 import { ErrorMapper } from "utils/ErrorMapper";
 import { Cleanup } from "utils/Cleanup";
 import { Task } from "Tools/Task"
-import { colonyTask } from "Tasks/ColonyTask"
+import { colonyTask } from "Tasks/Colony"
 
 declare global {
   /*
@@ -19,11 +22,11 @@ declare global {
       room : string,
       at : number
     },
-    tasks : Map<number, any>
+    tasks : Record<number, Task.Data>
   }
 
   interface CustomGlobals {
-    livetasks : Map<number, Task>
+    livetasks : Map<number, Task.Task>
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
@@ -32,13 +35,17 @@ declare global {
   }
 }
 
-new colonyTask("W45S43");
-
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
-
-
   Cleanup.Run();
 
+  if (global.livetasks.size == 0)
+    new colonyTask("W45S43");
+
+  for(let task of global.livetasks)
+    task[1].Exectute();
+
 });
+
+console.log("Recompile finished in " + (Game.cpu.getUsed() - start).toFixed(2));
