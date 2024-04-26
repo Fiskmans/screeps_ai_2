@@ -1,3 +1,3 @@
-export * from "Tasks/Colony"
-export * from "Tasks/Upgrade"
+import * as Tasks from "Tools/TasksIndex"
 
+export { Tasks }

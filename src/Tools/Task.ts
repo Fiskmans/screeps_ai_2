@@ -7,60 +7,36 @@ export namespace Task
         InProgress
     }
 
-    export interface Data {
-        type : string,
-        status : Status,
-        removeAt : number
-    }
-
     export abstract class Task {
 
-        private _data : Data;
-        protected get data() {
-            return this._data;
-        }
-
-        protected abstract Type() : string;
         protected abstract Run() : void;
+        public abstract setup(...args : any[]) : void ;
 
+        public type : string = "";
+        public status : Status = Status.InProgress;
+        public removeAt : number = Game.time;
 
-        public name : string;
-        public id : number;
-
-        constructor(name : string)
-        {
-            this.id = Memory.taskIdCounter++;
-
-            this.name = name;
-            this._data = {
-                type: this.Type(),
-                status: Status.InProgress,
-                removeAt: Game.time + 1
-            };
-
-            Memory.tasks[this.id] = this._data;
-            global.livetasks.set(this.id, this);
-            console.log(this.id, name);
-        }
+        public name : string = "";
+        public id : number = -1;
 
         protected keep(ticks : number)
         {
-            this.data.removeAt = Game.time + ticks;
+            this.removeAt = Game.time + ticks;
         }
 
         protected done()
         {
-            this.data.status = Status.Success;
-            global.livetasks.delete(this.id);
+            this.status = Status.Success;
+            delete Memory.tasks[this.id];
         }
 
         protected fail()
         {
-            this.data.status = Status.Failure;
-            global.livetasks.delete(this.id);
+            this.status = Status.Failure;
+            delete Memory.tasks[this.id];
         }
 
-        public Exectute() : void {
+        public Execute() : void {
             this.Run();
         }
 

@@ -4,7 +4,9 @@ let start = Game.cpu.getUsed();
 import { ErrorMapper } from "utils/ErrorMapper";
 import { Cleanup } from "utils/Cleanup";
 import { Task } from "Tools/Task"
-import { colonyTask } from "Tasks/Colony"
+import { Tasks } from "Tools/Tasks"
+import { Memhack } from "utils/Memhack";
+import { TaskFactory } from "Tools/TaskFactory";
 
 declare global {
   /*
@@ -21,30 +23,39 @@ declare global {
     lastViewed : {
       room : string,
       at : number
-    },
-    tasks : Record<number, Task.Data>
+    };
+    tasks: { [taskId: string]: Task.Task };
+  }
+
+  interface RawMemory {
+    _parsed : any
   }
 
   interface CustomGlobals {
-    livetasks : Map<number, Task.Task>
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
   namespace NodeJS {
-    interface Global extends CustomGlobals {}
+    interface Global extends CustomGlobals {
+      Memory? : Memory;
+    }
   }
 }
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
+  Memhack.Setup();
   Cleanup.Run();
 
-  if (global.livetasks.size == 0)
-    new colonyTask("W45S43");
 
-  for(let task of global.livetasks)
-    task[1].Exectute();
+  if (Object.keys(Memory.tasks).length == 0)
+    TaskFactory.CreateNewTask(Tasks.colony, `Colony [${Game.spawns.Spawn1.room.name}]`,  Game.spawns.Spawn1.room.name)
+
+  for(let task of Object.values(Memory.tasks))
+  {
+    task.Execute();
+  }
 
 });
 

@@ -1,36 +1,24 @@
 import { Task } from "Tools/Task"
 
-export namespace Tasks {
+export class upgrade extends Task.Task {
 
-    interface upgradeData extends Task.Data
+    protected Type(): string {
+        return "upgradeTask";
+    }
+    public owner : number = -1;
+
+    public setup(owner : number)
     {
-        owner : number
+        this.owner = owner;
     }
 
-    export class upgrade extends Task.Task {
+    public Run(): void {
+        this.keep(10);
 
-        protected Type(): string {
-            return "upgradeTask";
-        }
-
-        protected get data() {
-            return super.data as upgradeData;
-        }
-
-        constructor(name : string, owner : number)
+        if (Task.Task.GetStatus(this.owner) != Task.Status.InProgress)
         {
-            super(name);
-            this.data.owner = owner;
-        }
-
-        public Run(): void {
-            this.keep(10);
-
-            if (Task.Task.GetStatus(this.data.owner) != Task.Status.InProgress)
-            {
-                this.done();
-                return;
-            }
+            this.done();
+            return;
         }
     }
 }

@@ -1,16 +1,22 @@
-import { colonyTask } from "Tasks/Colony";
-import { Task } from "Tools/Task";
-import { Tasks } from "Tasks/Upgrade";
-
+import { TaskFactory } from "Tools/TaskFactory";
+import { Tasks } from "Tools/Tasks"
 
 export class Cleanup
 {
+    static recompiled : boolean = true;
+
     public static Run()
     {
         this.Creeps();
-        this.Memory();
-        this.Global();
         this.Tasks();
+
+        if (this.recompiled)
+        {
+            this.RecreateTasks();
+            this.Memory();
+            this.Global();
+            this.recompiled = false;
+        }
     }
 
     private static Creeps()
@@ -43,43 +49,57 @@ export class Cleanup
     private static Global()
     {
         const defaults : CustomGlobals = {
-            livetasks : new Map<number, Task.Task>()
         }
         _.defaults(global, defaults);
     }
 
     private static Tasks()
     {
-        if(global.livetasks.size == 0)
-        {
-            this.RecreateTasks();
-        }
-
         let toDelete = [];
         let now = Game.time;
-        for(let taskId in Memory.tasks)
+        for(let taskId of Object.keys(Memory.tasks))
         {
-            let obj = Memory.tasks[taskId];
-            if(obj.removeAt < now)
-            {
-                toDelete.push(taskId);
-            }
+            let task = Memory.tasks[taskId];
+
+            if(!_.isNull(task) && task.removeAt >= now)
+                continue;
+
+            toDelete.push(taskId);
+        }
+
+        for (let id of toDelete)
+        {
+            console.log(`Task [${id}] timed out`);
+            delete Memory.tasks[id];
         }
     }
 
     private static RecreateTasks()
     {
-        for(let taskId in Memory.tasks)
+        let errored = [];
+        let log = "Recreated tasks: ";
+        for(let task of Object.values(Memory.tasks))
         {
-            let obj = Memory.tasks[taskId];
-            let liveObj = {};
-
-            switch(obj.type)
+            switch(task.type)
             {
-                case "colony": new colonyTask(obj);
-                case "upgrade": new Tasks.upgrade(obj);
+                case Tasks.colony.name:
+                    Object.setPrototypeOf(task, Tasks.colony.prototype);
+                    break;
+                case Tasks.upgrade.name:
+                    Object.setPrototypeOf(task, Tasks.upgrade.prototype);
+                    break;
+                default:
+                    console.log(`RecreateTaskError: [${task.id}] no prototype with name ${task.type} available`);
+                    errored.push(task.id);
+                    continue;
             }
-            global.livetasks.set(taskId, liveObj);
+            log += ", " + task.id;
+        }
+        console.log(log);
+
+        for (let id of errored)
+        {
+            delete Memory.tasks[id];
         }
     }
 }
